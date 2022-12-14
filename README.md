@@ -20,3 +20,9 @@
 ### Story 1
 - Requirement: have a checklist of where changes should be made to implement a certain functionality.
 - Motivation: most often, I found wiring different parts of a system together is much harder than writing codes for some specific functions.
+## Milestones
+- Entreprenuer -> Story 1 -> present all pallet_balances's configurable stuff in a form on a locally runned website. Present all APIs on a separate page.
+- Entreprenuer -> Story 1 -> accept user data in urlencoded form and change the local substrate_template_node's code accordingly.
+- Entreprenuer -> Story 1 -> provide a button on the website called "run", to automatically compile the local customized node and run a local testnet.
+- Entreprenuer -> Story 1 -> allow user to write business scenarios in our specially designed Domain Specific Language.
+- Entreprenuer -> Story 1 -> accept user provided scenarios in DSL and automatically generate a demo for user to verify their ideas.
