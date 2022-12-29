@@ -3,4 +3,6 @@
 members = [
     "assembler",
     "server",
+    "generator",
+    "courier",
 ]
