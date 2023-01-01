@@ -1,1 +1,2 @@
 ![alt text](https://github.com/lhymmEU/blockchain_fuzzer/blob/main/roadmap.drawio.png?raw=true)
+![alt text](https://github.com/lhymmEU/blockchain_fuzzer/blob/main/blockchain_composable_fuzzer_architecture.drawio.png?raw=true)
