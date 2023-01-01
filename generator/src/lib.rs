@@ -39,7 +39,7 @@ impl Generator {
         result
     }
 
-    fn use_algo(&mut self, algo_type: GenAlgoType, location: Option<String>, algo: Option<GenAlgo>) -> &Generator {
+    fn use_algo(mut self, algo_type: GenAlgoType, location: Option<String>, algo: Option<GenAlgo>) -> Generator {
         match algo_type {
             // this type implies that user will provide a location to existing seeds
             GenAlgoType::Empty => {
@@ -92,12 +92,12 @@ mod tests {
         let mut customized = "".to_string();
         let mut empty = "".to_string();
         // check if generator can store user provided seeds' location
-        g.use_algo(
+        g = g.use_algo(
             GenAlgoType::Empty, 
             Some("my seeds location".to_string()), 
             None
         );
-        if let Some(ref s) = g.users_seeds_loc {
+        if let Some(s) = &g.users_seeds_loc {
             loc = s.to_string();
         }
         assert_eq!(
@@ -105,26 +105,26 @@ mod tests {
             "my seeds location".to_string()
         );
         // check if generator can use dafult generation algorithm
-        g.use_algo(
+        g = g.use_algo(
             GenAlgoType::Default, 
             None, 
             None
         );
-        if let Some(s) = g.generate(1).pop() {
-            empty = s;
+        if let Some(s) = &g.generate(1).pop() {
+            empty = s.to_string();
         }
         assert_ne!(
             empty,
             "Empty Generation Algorithm".to_string()
         );
         // check if generator can use customized generation algorithm
-        g.use_algo(
+        g = g.use_algo(
             GenAlgoType::Customized, 
             None, 
             Some(GenAlgo(Box::new(|| { "Customized Generation Algorithm".to_string() })))
         );
-        if let Some(s) = g.generate(1).pop() {
-            customized = s
+        if let Some(s) = &g.generate(1).pop() {
+            customized = s.to_string();
         }
         assert_eq!(
             customized,
@@ -133,7 +133,7 @@ mod tests {
     }
     #[test]
     fn use_algo_warns_illegal_gen_algo_types() {
-
+        todo!()
     }
     #[test]
     fn customizable_algorithm_works_for_single_iteration() {
@@ -143,7 +143,7 @@ mod tests {
             "Hello I'm customized algorithm!".to_string()
         }));
 
-        g.use_algo(GenAlgoType::Customized, None, Some(algo));
+        g = g.use_algo(GenAlgoType::Customized, None, Some(algo));
 
         assert_eq!(g.generate(1).pop(), Some("Hello I'm customized algorithm!".to_string()))
     }
@@ -155,11 +155,15 @@ mod tests {
             "Hello I'm customized algorithm!".to_string()
         }));
 
-        g.use_algo(GenAlgoType::Customized, None, Some(algo));
+        g = g.use_algo(GenAlgoType::Customized, None, Some(algo));
 
         for i in g.generate(10) {
             assert_eq!(i, "Hello I'm customized algorithm!".to_string())
         }
         
+    }
+    #[test]
+    fn generator_can_store_seeds_to_database() {
+        todo!()
     }
 }

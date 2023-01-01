@@ -9,5 +9,5 @@
 
 #[test]
 fn generator_template_fluent_api_works() {
-    
+    todo!()
 }
