@@ -1,2 +1,3 @@
-mod evm_cross_chain_simulator;
-mod substrate_cross_chain_simulator;
+mod cbridge_simulator;
+mod multichain_simulator;
+mod polygon_simulator;
