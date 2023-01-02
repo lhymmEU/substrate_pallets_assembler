@@ -13,3 +13,8 @@ pub fn get_file_counts(dir: &str) -> usize {
 pub fn read_file_to_string(path: &str) -> Result<String, std::io::Error> {
     fs::read_to_string(path)
 }
+// delete the whole directory and re-create it again
+pub fn delete_all(dir: &str) -> Result<(), std::io::Error> {
+    fs::remove_dir_all(dir).unwrap();
+    fs::create_dir(dir)
+}

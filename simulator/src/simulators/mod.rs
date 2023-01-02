@@ -1,3 +1,3 @@
-mod cbridge_simulator;
-mod multichain_simulator;
-mod polygon_simulator;
+mod moonbeam_wormhole_ethereum_bridge_simulator;
+
+pub use moonbeam_wormhole_ethereum_bridge_simulator::*;

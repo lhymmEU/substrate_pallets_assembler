@@ -90,20 +90,28 @@ fn default_gen_algo() -> GenAlgo {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
+
+    fn clear_test(dir: &str) -> Result<(), std::io::Error> {
+        keeper::delete_all(dir)
+    }
 
     #[test]
+    #[serial]
     fn generator_can_use_customized_default_trait() {
         let mut g = new();
 
         g = g.generate(1).unwrap();
-        let seed_name = g.initial_seeds_loc.0 + "initial_seed_1";
-        let file_content = keeper::read_file_to_string(&seed_name).unwrap();
+        let file_content = keeper::read_file_to_string(&format!("{}{}", &g.initial_seeds_loc.0, "/initial_seed_1")).unwrap();
         assert_eq!(
             file_content,
             "Empty Generation Algorithm".to_string()
-        )
+        );
+
+        clear_test(&g.initial_seeds_loc.0).unwrap();
     }
     #[test]
+    #[serial]
     fn use_algo_works_for_different_gen_algo_types() {
         let mut g = new();
         let mut loc = "".to_string();
@@ -119,7 +127,7 @@ mod tests {
             loc = s.to_string();
         }
         assert_eq!(loc, "my seeds location".to_string());
-        // check if generator can use dafult generation algorithm
+        // check if generator can use default generation algorithm
         g = g
             .use_algo(GenAlgoType::Default, None, None)
             .generate(1)
@@ -127,6 +135,7 @@ mod tests {
         let file_path = g.initial_seeds_loc.0.to_owned() + "/initial_seed_1";
         empty = keeper::read_file_to_string(&file_path).unwrap();
         assert_ne!(empty, "Empty Generation Algorithm".to_string());
+        clear_test(&g.initial_seeds_loc.0).unwrap();
         // check if generator can use customized generation algorithm
         g = g
             .use_algo(
@@ -140,12 +149,15 @@ mod tests {
             .unwrap();
         customized = keeper::read_file_to_string(&file_path).unwrap();
         assert_eq!(customized, "Customized Generation Algorithm".to_string());
+        clear_test(&g.initial_seeds_loc.0).unwrap();
     }
     #[test]
+    #[serial]
     fn use_algo_warns_illegal_gen_algo_types() {
         todo!()
     }
     #[test]
+    #[serial]
     fn customizable_algorithm_works_for_single_iteration() {
         let mut g = new();
 
@@ -155,14 +167,15 @@ mod tests {
             .use_algo(GenAlgoType::Customized, None, Some(algo))
             .generate(1)
             .unwrap();
-        let file_path = g.initial_seeds_loc.0 + "initial_seed_1";
-        let content = keeper::read_file_to_string(&file_path).unwrap();
+        let content = keeper::read_file_to_string(&format!("{}{}", &g.initial_seeds_loc.0, "/initial_seed_1")).unwrap();
         assert_eq!(
             content,
             "Hello I'm customized algorithm!".to_string()
-        )
+        );
+        clear_test(&g.initial_seeds_loc.0).unwrap();
     }
     #[test]
+    #[serial]
     fn customizable_algorithm_works_for_multi_iteration() {
         let mut g = new();
         let num = 10;
@@ -177,8 +190,10 @@ mod tests {
         let file_counts = keeper::get_file_counts(&g.initial_seeds_loc.0);
 
         assert_eq!(num, file_counts as u32);
+        clear_test(&g.initial_seeds_loc.0).unwrap();
     }
     #[test]
+    #[serial]
     fn generator_can_read_user_provided_seeds() {
         let mut g = new();
         let test_seeds_num = 3;
@@ -194,8 +209,10 @@ mod tests {
 
         let file_counts = keeper::get_file_counts(&g.initial_seeds_loc.0);
         assert_eq!(test_seeds_num, file_counts as u32);
+        clear_test(&g.initial_seeds_loc.0).unwrap();
     }
     #[test]
+    #[serial]
     fn generator_can_store_seeds_to_database() {
         let mut g = new();
         let num = 3;
@@ -204,5 +221,6 @@ mod tests {
         let result = keeper::get_file_counts(&g.initial_seeds_loc.0);
 
         assert_eq!(num, result as u32);
+        clear_test(&g.initial_seeds_loc.0).unwrap();
     }
 }
