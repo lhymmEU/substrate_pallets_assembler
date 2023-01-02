@@ -1,9 +1,18 @@
-[workspace]
+[[bin]]
+name = "blockchain_fuzzer"
+path = "src/main.rs"
 
+[package]
+name = "blockchain_fuzzer"
+description = "Composable cross-chain fuzzer implementation"
+readme = "README.md"
+version = "0.0.1"
+
+[workspace]
 members = [
-    "assembler",
     "server",
     "generator",
     "courier",
     "simulator",
+    "keeper",
 ]

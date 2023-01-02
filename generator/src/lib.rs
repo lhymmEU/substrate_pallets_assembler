@@ -2,14 +2,22 @@
 pub struct Generator {
     // the algorithm used to generate test cases
     algo: GenAlgo,
-    // 
+    // to store user provided seeds' location, if any
     users_seeds_loc: Option<String>,
+    // the location of the initial seeds
+    initial_seeds_loc: SeedLoc,
 }
 struct GenAlgo(Box<dyn Fn() -> String>);
-
 impl Default for GenAlgo {
     fn default() -> Self {
-        GenAlgo(Box::new(|| { "Empty Generation Algorithm".to_string() }))
+        GenAlgo(Box::new(|| "Empty Generation Algorithm".to_string()))
+    }
+}
+
+struct SeedLoc(String);
+impl Default for SeedLoc {
+    fn default() -> Self {
+        SeedLoc("../seeds/initial".to_string())
     }
 }
 
@@ -20,37 +28,46 @@ pub enum GenAlgoType {
 }
 
 impl Generator {
-    // build a generator type
-    fn build() {
-
-    }
-    // generate test cases and store them in a database
-    fn run() {
-
-    }
-    // generate test cases using customized algorithms
-    fn generate(&self, num: u32) -> Vec<String> {
-        let mut result = Vec::new();
-        // generate #"num" test cases
-        for _i in 1..=num {
-            result.push((self.algo.0)());
+    // generate test cases using customized algorithms,
+    // then store them into database.
+    fn generate(mut self, num: u32) -> Result<Generator, String> {
+        // if the seeds are provided by user
+        // store the user provided location as initial seeds location
+        if num == 0 {
+            if let Some(seed_loc) = &self.users_seeds_loc {
+                self.initial_seeds_loc = SeedLoc(seed_loc.to_string());
+            }
+            Ok(self)
+        } else {
+            // generate and store #"num" test cases
+            for i in 1..=num {
+                keeper::store(
+                    (self.algo.0)().as_str(),
+                    self.initial_seeds_loc.0.as_str(),
+                    &format!("/initial_seed_{}", i),
+                );
+            }
+            Ok(self)
         }
-
-        result
     }
 
-    fn use_algo(mut self, algo_type: GenAlgoType, location: Option<String>, algo: Option<GenAlgo>) -> Generator {
+    fn use_algo(
+        mut self,
+        algo_type: GenAlgoType,
+        location: Option<String>,
+        algo: Option<GenAlgo>,
+    ) -> Generator {
         match algo_type {
             // this type implies that user will provide a location to existing seeds
             GenAlgoType::Empty => {
                 self.users_seeds_loc = location;
                 self
-            },
+            }
             // this type implies the user wants to use our default generation algorithms
             GenAlgoType::Default => {
                 self.algo = default_gen_algo();
                 self
-            },
+            }
             GenAlgoType::Customized => {
                 if let Some(algo) = algo {
                     self.algo = algo;
@@ -67,12 +84,8 @@ pub fn new() -> Generator {
 
 // The default generation algorithm
 fn default_gen_algo() -> GenAlgo {
-    GenAlgo(Box::new( || { 
-        "Default Generation Algorithm".to_string()
-    }))
+    GenAlgo(Box::new(|| "Default Generation Algorithm".to_string()))
 }
-
-
 
 #[cfg(test)]
 mod tests {
@@ -80,10 +93,15 @@ mod tests {
 
     #[test]
     fn generator_can_use_customized_default_trait() {
-        let g = new();
+        let mut g = new();
 
-        assert_eq!(g.generate(1).pop(), Some("Empty Generation Algorithm".to_string()))
-
+        g = g.generate(1).unwrap();
+        let seed_name = g.initial_seeds_loc.0 + "initial_seed_1";
+        let file_content = keeper::read_file_to_string(&seed_name).unwrap();
+        assert_eq!(
+            file_content,
+            "Empty Generation Algorithm".to_string()
+        )
     }
     #[test]
     fn use_algo_works_for_different_gen_algo_types() {
@@ -93,43 +111,35 @@ mod tests {
         let mut empty = "".to_string();
         // check if generator can store user provided seeds' location
         g = g.use_algo(
-            GenAlgoType::Empty, 
-            Some("my seeds location".to_string()), 
-            None
+            GenAlgoType::Empty,
+            Some("my seeds location".to_string()),
+            None,
         );
         if let Some(s) = &g.users_seeds_loc {
             loc = s.to_string();
         }
-        assert_eq!(
-            loc,
-            "my seeds location".to_string()
-        );
+        assert_eq!(loc, "my seeds location".to_string());
         // check if generator can use dafult generation algorithm
-        g = g.use_algo(
-            GenAlgoType::Default, 
-            None, 
-            None
-        );
-        if let Some(s) = &g.generate(1).pop() {
-            empty = s.to_string();
-        }
-        assert_ne!(
-            empty,
-            "Empty Generation Algorithm".to_string()
-        );
+        g = g
+            .use_algo(GenAlgoType::Default, None, None)
+            .generate(1)
+            .unwrap();
+        let file_path = g.initial_seeds_loc.0.to_owned() + "/initial_seed_1";
+        empty = keeper::read_file_to_string(&file_path).unwrap();
+        assert_ne!(empty, "Empty Generation Algorithm".to_string());
         // check if generator can use customized generation algorithm
-        g = g.use_algo(
-            GenAlgoType::Customized, 
-            None, 
-            Some(GenAlgo(Box::new(|| { "Customized Generation Algorithm".to_string() })))
-        );
-        if let Some(s) = &g.generate(1).pop() {
-            customized = s.to_string();
-        }
-        assert_eq!(
-            customized,
-            "Customized Generation Algorithm".to_string()
-        );
+        g = g
+            .use_algo(
+            GenAlgoType::Customized,
+            None,
+            Some(GenAlgo(Box::new(|| {
+                "Customized Generation Algorithm".to_string()
+            }))),
+            )
+            .generate(1)
+            .unwrap();
+        customized = keeper::read_file_to_string(&file_path).unwrap();
+        assert_eq!(customized, "Customized Generation Algorithm".to_string());
     }
     #[test]
     fn use_algo_warns_illegal_gen_algo_types() {
@@ -139,31 +149,60 @@ mod tests {
     fn customizable_algorithm_works_for_single_iteration() {
         let mut g = new();
 
-        let algo = GenAlgo(Box::new( || {
+        let algo = GenAlgo(Box::new(|| "Hello I'm customized algorithm!".to_string()));
+
+        g = g
+            .use_algo(GenAlgoType::Customized, None, Some(algo))
+            .generate(1)
+            .unwrap();
+        let file_path = g.initial_seeds_loc.0 + "initial_seed_1";
+        let content = keeper::read_file_to_string(&file_path).unwrap();
+        assert_eq!(
+            content,
             "Hello I'm customized algorithm!".to_string()
-        }));
-
-        g = g.use_algo(GenAlgoType::Customized, None, Some(algo));
-
-        assert_eq!(g.generate(1).pop(), Some("Hello I'm customized algorithm!".to_string()))
+        )
     }
     #[test]
     fn customizable_algorithm_works_for_multi_iteration() {
         let mut g = new();
-        
-        let algo = GenAlgo(Box::new( || {
-            "Hello I'm customized algorithm!".to_string()
-        }));
+        let num = 10;
 
-        g = g.use_algo(GenAlgoType::Customized, None, Some(algo));
+        let algo = GenAlgo(Box::new(|| "Hello I'm customized algorithm!".to_string()));
 
-        for i in g.generate(10) {
-            assert_eq!(i, "Hello I'm customized algorithm!".to_string())
-        }
-        
+        g = g
+            .use_algo(GenAlgoType::Customized, None, Some(algo))
+            .generate(num)
+            .unwrap();
+
+        let file_counts = keeper::get_file_counts(&g.initial_seeds_loc.0);
+
+        assert_eq!(num, file_counts as u32);
+    }
+    #[test]
+    fn generator_can_read_user_provided_seeds() {
+        let mut g = new();
+        let test_seeds_num = 3;
+
+        g = g
+            .use_algo(
+                GenAlgoType::Empty,
+                Some("../seeds/test_seeds".to_string()),
+                None,
+            )
+            .generate(0)
+            .unwrap();
+
+        let file_counts = keeper::get_file_counts(&g.initial_seeds_loc.0);
+        assert_eq!(test_seeds_num, file_counts as u32);
     }
     #[test]
     fn generator_can_store_seeds_to_database() {
-        todo!()
+        let mut g = new();
+        let num = 3;
+
+        g = g.generate(num).unwrap();
+        let result = keeper::get_file_counts(&g.initial_seeds_loc.0);
+
+        assert_eq!(num, result as u32);
     }
 }
