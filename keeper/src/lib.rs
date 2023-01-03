@@ -1,8 +1,9 @@
 use std::fs;
 
 // store seed to seed_loc with seed_name
-pub fn store(seed: &str, seed_loc: &str, seed_name: &str) {
-    fs::write(seed_loc.to_owned() + seed_name, seed).expect("Unable to write seeds");
+pub fn store(seed: &str, seed_loc: &str, seed_name: &str) -> Result<(), std::io::Error> {
+    // TODO: this function doesn't return an error on MacOS if a path doesn't exists
+    fs::write(seed_loc.to_owned() + seed_name, seed)
 }
 // count the number of files within a given directory
 pub fn get_file_counts(dir: &str) -> usize {

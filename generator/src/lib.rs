@@ -3,6 +3,7 @@
 
 use std::fmt::{Display, Formatter};
 use tracing::Level;
+use thiserror::Error;
 
 #[derive(Default)]
 pub struct Generator {
@@ -14,6 +15,14 @@ pub struct Generator {
     pub users_seeds_loc: SeedLoc,
     // the location of the initial seeds
     pub initial_seeds_loc: SeedLoc,
+}
+
+#[derive(Error, Debug)]
+pub enum GeneratorError {
+    #[error("When the generation algo is empty, an initial seeds location must be provided!")]
+    MissingSeedLocation,
+    #[error("Failed to write seed to location")]
+    FailedToWriteSeed,
 }
 
 impl Generator {
@@ -37,7 +46,7 @@ impl Generator {
         algo_type: GenAlgoType,
         location: Option<SeedLoc>,
         algo: Option<GenAlgo>,
-    ) -> Result<Generator, String> {
+    ) -> Result<Generator, GeneratorError> {
         tracing::event!(Level::INFO, "Inside use-algo!");
         match algo_type {
             // this type implies that user will provide a location to existing seeds
@@ -45,8 +54,7 @@ impl Generator {
                 if let Some(loc) = location {
                     self.users_seeds_loc = loc;
                 } else {
-                    // TODO: need to change this
-                    panic!("A location of initial seeds must be provided if GenAlgo is Off!")
+                    return Err(GeneratorError::MissingSeedLocation);
                 }
                 self.algo_type = GenAlgoType::Off;
                 Ok(self)
@@ -77,7 +85,7 @@ impl Generator {
             seeds_location = %self.initial_seeds_loc.0
         )
     )]
-    pub fn generate(mut self, num: u32) -> Result<Generator, String> {
+    pub fn generate(mut self, num: u32) -> Result<Generator, GeneratorError> {
         tracing::event!(Level::INFO, "Inside generate!!!");
         // if the seeds are provided by user
         // store the user provided location as initial seeds location
@@ -90,12 +98,14 @@ impl Generator {
             }
             GenAlgoType::Customized | GenAlgoType::Default => {
                 for i in 1..=num {
-                    keeper::store(
+                    if let Err(_) = keeper::store(
                         (self.algo.0)().as_str(),
                         self.initial_seeds_loc.0.as_str(),
                         // TODO: consider add algorithm's name to the seed name
                         &format!("/initial_seed_{}", i),
-                    );
+                    ) {
+                        return Err(GeneratorError::FailedToWriteSeed);
+                    }
                 }
                 Ok(self)
             }
