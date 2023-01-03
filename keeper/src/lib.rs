@@ -18,3 +18,7 @@ pub fn delete_all(dir: &str) -> Result<(), std::io::Error> {
     fs::remove_dir_all(dir).unwrap();
     fs::create_dir(dir)
 }
+// clear the generated test files
+pub fn clear_test(dir: &str) -> Result<(), std::io::Error> {
+    delete_all(dir)
+}

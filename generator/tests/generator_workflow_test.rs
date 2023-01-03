@@ -7,7 +7,17 @@
         3. store the stamped test cases into a database
 */
 
+use generator::{GenAlgoType, Generator};
+
 #[test]
 fn generator_template_fluent_api_works() {
-    todo!()
+    let num = 10;
+    let my_gen = Generator::new()
+        .use_algo(GenAlgoType::Default, None, None)
+        .unwrap()
+        .generate(num);
+    let seed_location = my_gen.unwrap().initial_seeds_loc.0;
+
+    assert_eq!(num, keeper::get_file_counts(&seed_location) as u32);
+    keeper::clear_test(&seed_location).unwrap();
 }
