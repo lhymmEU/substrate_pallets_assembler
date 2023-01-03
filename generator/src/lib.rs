@@ -1,5 +1,8 @@
-// TODO: add tracing to trace the execution of generator, for future metering & web UI to use
+// TODO: figure out why the tracing::instrument macro need a tracing::event! to work properly.
 // TODO: add error handling for future web UI to use
+
+use std::fmt::{Display, Formatter};
+use tracing::Level;
 
 #[derive(Default)]
 pub struct Generator {
@@ -15,16 +18,27 @@ pub struct Generator {
 
 impl Generator {
     // new will return a default Generator
+    #[tracing::instrument(name = "Generator - initializing")]
     pub fn new() -> Generator {
+        tracing::event!(Level::INFO, "Initializing generator!");
         Generator::default()
     }
     // set the algorithm to use
+    #[tracing::instrument(
+        name = "Generator - setting algorithm",
+        skip_all,
+        fields(
+            algo_type = %algo_type,
+            initial_seed_location = %self.initial_seeds_loc.0
+        ),
+    )]
     pub fn use_algo(
         mut self,
         algo_type: GenAlgoType,
         location: Option<SeedLoc>,
         algo: Option<GenAlgo>,
     ) -> Result<Generator, String> {
+        tracing::event!(Level::INFO, "Inside use-algo!");
         match algo_type {
             // this type implies that user will provide a location to existing seeds
             GenAlgoType::Off => {
@@ -55,7 +69,16 @@ impl Generator {
     }
     // generate test cases using customized algorithms,
     // then store them into database.
+    #[tracing::instrument(
+        name = "Generator - generating initial seeds...",
+        skip_all,
+        fields(
+            num_of_seeds_generated = %num,
+            seeds_location = %self.initial_seeds_loc.0
+        )
+    )]
     pub fn generate(mut self, num: u32) -> Result<Generator, String> {
+        tracing::event!(Level::INFO, "Inside generate!!!");
         // if the seeds are provided by user
         // store the user provided location as initial seeds location
         match self.algo_type {
@@ -113,6 +136,16 @@ pub enum GenAlgoType {
 impl Default for GenAlgoType {
     fn default() -> Self {
         GenAlgoType::Default
+    }
+}
+
+impl Display for GenAlgoType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GenAlgoType::Off => { write!(f, "Off") },
+            GenAlgoType::Default => { write!(f, "Default") },
+            GenAlgoType::Customized => { write!(f, "Customized") },
+        }
     }
 }
 
