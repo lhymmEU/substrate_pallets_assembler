@@ -1,3 +1,3 @@
-mod moonbeam_wormhole_ethereum_bridge_simulator;
+mod eth_wormhole_solana_bridge_simulator;
 
-pub use moonbeam_wormhole_ethereum_bridge_simulator::*;
+pub use eth_wormhole_solana_bridge_simulator::*;
